@@ -1,0 +1,319 @@
+sudo mongod --dbpath /var/lib/mongodb/ --journal
+docker run --name some-mongo -d mongo
+docker exec -it some-mongo bash
+
+# mostre todos os bancos de dados
+show dbs
+
+# use/crie o banco de dados gdi
+use gdi
+
+
+## inserindo a coleção pesquisador
+db.pesquisador.insert([
+    {"_id":0,"nome":"Vitor Godoy Souza","idade":28, "profissao":"Pesquisador", 
+        artigos:[
+            {"titulo":"SQL ou NoSQL, um resumo do cenário atual"},
+            {"titulo":"GDI é a melhor disciplina do CIn"},
+            {"titulo":"Comparativo de performance de banco de dados"},
+        ]
+    },
+    {"_id":1,"nome":"Robson Fidalgo","idade":34, "profissao":"Professor",
+        artigos:[
+            {"titulo":"Vitor é o melhor monitor de todos os tempos, fato científico"},
+            {"titulo":"MongoDB aplicado a Big Data"},
+            {"titulo":"Comparativo de performance de banco de dados"},
+        ]
+    },
+    {"_id":2,"nome":"Zezinho Intelectual","idade":120,"profissao":"Filosofo", "lindo":"Sim",
+        artigos:[
+            {"titulo":"Computação aplicado a aerodinâmica"},
+            {"titulo":"MongoDB aplicado a Big Data"},
+            {"titulo":"Comparativo de performance de banco de dados"},
+        ]
+    },
+    {"_id":3,"nome":"Manezinho Intelectual","idade":56,"profissao":"Filosofo", "feio":"Nao",
+        artigos:[
+            {"titulo":"Computação aplicado a aerodinâmica"},
+            {"titulo":"MongoDB aplicado a Big Data"},
+            {"titulo":"Como GDI foi capaz de aumentar a média do QI mundial"},
+        ]
+    }
+])
+
+## inserindo a coleção artigo
+db.artigo.insert([
+    {"_id":0, "titulo":"SQL ou NoSQL, um resumo do cenário atual", "dias_de_producao":90,
+        autores:[
+            {"nome":"Vitor Godoy Souza"}
+        ]
+    },
+    {"_id":1, "titulo":"GDI é a melhor disciplina do CIn", "dias_de_producao":77,
+        autores:[
+            {"nome":"Vitor Godoy Souza"}
+        ]
+    },
+    {"_id":2,"titulo":"Comparativo de performance de banco de dados",  "dias_de_producao":30,
+        autores:[
+            {"nome":"Vitor Godoy Souza"},
+            {"nome":"Robson Fidalgo"},
+            {"nome":"Zezinho Intelectual"}
+        ]
+    },
+    {"_id":3, "titulo":"Vitor é o melhor monitor de todos os tempos, fato científico", "dias_de_producao":49,
+        autores:[
+            {"nome":"Robson Fidalgo"}
+        ]
+    },
+    {"_id":4,"titulo":"MongoDB aplicado a Big Data", "dias_de_producao":122,
+        autores:[
+            {"nome":"Robson Fidalgo"},
+            {"nome":"Zezinho Intelectual"},
+            {"nome":"Manezinho Intelectual"}
+        ]
+    },
+    {"_id":5,"titulo":"Computação aplicado a aerodinâmica", "dias_de_producao":98,
+        autores:[
+            {"nome":"Zezinho Intelectual"},
+            {"nome":"Manezinho Intelectual"}
+        ]
+    },
+    {"_id":6,"titulo":"Como GDI foi capaz de aumentar a média do QI mundial", "dias_de_producao":22,
+        autores:[
+            {"nome":"Manezinho Intelectual"}
+        ]
+    }
+])
+
+
+## 1: Na coleção artigo: exiba o artigo com o título "GDI é a melhor disciplina do CIn"
+
+
+
+db.artigo.find({"titulo":"GDI é a melhor disciplina do CIn"}).pretty()
+
+
+
+## 2: Na coleção artigo: exiba os artigos que tem "dias_de_producao" >= 70
+
+
+
+db.artigo.find({"dias_de_producao":{$gte:70}}).pretty()
+
+
+
+## 3: Na coleção pesquisador: exiba os pesquisadores que tem profissao:"filosofo" e idade > 60
+
+
+
+db.pesquisador.find({"profissao":"Filosofo", "idade":{$gt:60}}).pretty()
+
+
+## 4: Não quero exibir os artigos, como faço?
+
+
+
+db.pesquisador.find({"profissao":"Filosofo", "idade":{$gt:60}}, {_id:0,artigos:0}).pretty()
+
+
+
+## 5: Agora eu quero exibir os pesquisadores que  tem o nome Vitor Godoy Souza ou "Manezinho Intelectual" ou que seja um professor
+
+
+
+
+db.pesquisador.find({$or:[
+    {"profissao":"Professor"}, {"nome":"Vitor Godoy Souza"}, {"nome":"Manezinho Intelectual"} ]}).pretty()
+
+db.pesquisador.find({$or:[{"profissao":"Professor"},{"nome":{$in:["Vitor Godoy Souza", "Manezinho Intelectual"]}}]}).pretty()
+
+
+## 6: Quero encontrar todos os pesquisadores que tem a letra "u" no nome
+
+
+
+db.pesquisador.find({"nome":/u/}).pretty()
+
+
+## 7: Encontre os pesquisadores cujos nomes terminam com "Intelectual"
+## o primeiro exemplo vai dar errado, exemplo de dor de cabeça, não existe "name"
+
+
+
+db.pesquisador.find({"name":/Intelectual$/}).pretty()
+
+
+db.pesquisador.find({"nome":/Intelectual$/}).pretty()
+
+
+## 8: Encontre os pesquisadores cujos nomes iniciam-se com com "Rob"
+
+
+
+db.pesquisador.find({"nome":/^Rob/}).pretty()
+
+
+## 9: Encontre os pesquisadores que escreveram algum artigo cujo titulo comece com "Compu"
+#a) na coleção pesquisador
+
+
+db.pesquisador.find({"artigos.titulo":/^Compu/}, {"nome":1,_id:0}).pretty()
+
+
+#b) na coleção artigo
+db.artigo.find({"titulo":/^Compu/}, {"_id":0, "autores":1}).pretty()
+
+
+## Agora vamos brincas de agregar:
+
+## dentro de um aggregate podemos ter várias operações de agregação. 
+## Para conhecer todas, acesse a documentação no site oficial do mongo
+pipeline = [
+    { $match : { … },
+    { $group : { … },
+    { $sort : { … },
+    ...
+  ]
+
+
+## 10: qual a soma de todos os dias gastos para escrever todos os artigos?
+db.artigo.aggregate([]) <- #se for utilizar mais de uma operação de agregação, é necessário usar a lista
+db.artigo.aggregate([
+    {$group:{"_id" : null, "total":{$sum:"$dias_de_producao"} } }
+]).pretty()
+
+
+## 11: quantos artigos foram escritos?
+db.artigo.aggregate([
+    {$group:{"_id" : null, "total":{$sum:1} } }
+]).pretty()
+
+
+## 12: repita isso agora, sem mostrar o _id
+db.artigo.aggregate([
+    { $group:{"_id" : null, "total":{$sum:1} } },
+    { $project : { _id : 0 } }
+]).pretty()
+
+
+## 13: quantos artigos foram escritos, tais que o seu titulo contenha a string "omp"
+db.artigo.aggregate([
+    { $match: {"titulo":/omp/}},
+    { $group:{"_id" : null, "total":{$sum:1} } },
+    { $project : { _id : 0 } }
+]).pretty()
+
+
+## Agora vou tentar te mostrar a diferença que a modelagem do banco pode fazer. Ela pode facilitar ou dificultar a busca de informações
+## tudo depende de qual informação tu queres buscar
+
+## 14: Cada artigo foi escrito por quantos autores? Utilizando a coleção artigo.
+db.artigo.aggregate([
+    { $project: { titulo: 1, quantidade_de_autores: { $size: "$autores" }}}
+ ] ).pretty()
+
+## 15: Cada artigo foi escrito por quantos autores? Agora com a coleção pesquisador
+db.pesquisador.aggregate( [ 
+    { $unwind : "$artigos" },
+    { $sort: { "artigos.titulo": 1} },
+    { $group: { _id:"$artigos.titulo", "quantidade_de_autores":{$sum:1}}}
+] ).pretty()
+
+
+
+## 16: Liste todos os artigos por pesquisador, utilizando a coleção pesquisador
+db.pesquisador.find({},{"_id":0, "nome":1, "artigos":1}).pretty()
+
+## 17: Liste todos os artigos por pesquisador, utilizando a tabela artigo
+db.artigo.aggregate( [ 
+    { $unwind : "$autores" },
+    { $sort: { "autores.nome": 1} }
+
+])
+
+
+## 18: Liste todos os pesquisadores por artigo, utilizando a tabela pesquisador
+db.pesquisador.aggregate( [ 
+    { $unwind : "$artigos" },
+    { $sort: { "artigos.titulo": 1} }
+
+]).pretty()
+
+
+## 19: Liste todos os pesquisadores por artigo, utlizando a tabela artigo
+db.artigo.find().pretty()
+
+
+#Percebeu a diferença? A depender de como tu modela teu banco, pode mudar completamente a dificuldade para obter a mesma informação
+
+
+# Diretamente da documentação do MongoDB:
+# For many use cases in MongoDB, the denormalized data model where related data is stored within a single document will be optimal. 
+# However, in some cases, it makes sense to store related information in separate documents, typically in different collections or databases.
+
+
+#Seguem uma outra maneira de como poderiamos ter moldado o nosso banco:
+
+#Fazendo referências:
+db.pesquisadore.insert([
+    {"_id":0,"nome":"Vitor Godoy Souza","idade":28, "profissao":"Pesquisador", "artigos_ref":[0,1,2]
+    },
+    {"_id":1,"nome":"Robson Fidalgo","idade":34, "profissao":"Professor", "artigos_ref":[3,4,2]
+    },
+    {"_id":2,"nome":"Zezinho Intelectual","idade":120,"profissao":"Filosofo", "lindo":"Sim", "artigos_ref":[2,4,5]
+    },
+    {"_id":3,"nome":"Manezinho Intelectual","idade":56,"profissao":"Filosofo", "feio":"Nao", "artigos_ref":[4,5,6]
+    }
+])
+
+db.artigoe.insert([
+    {"_id":0, "titulo":"SQL ou NoSQL, um resumo do cenário atual", "dias_de_producao":90, "pesq_ref":[0]
+    },
+    {"_id":1, "titulo":"GDI é a melhor disciplina do CIn", "dias_de_producao":77, "pesq_ref":[0]
+    },
+    {"_id":2,"titulo":"Comparativo de performance de banco de dados",  "dias_de_producao":30, "pesq_ref":[0,1,2]
+    },
+    {"_id":3, "titulo":"Vitor é o melhor monitor de todos os tempos, fato científico", "dias_de_producao":49, "pesq_ref":[1]
+    },
+    {"_id":4,"titulo":"MongoDB aplicado a Big Data", "dias_de_producao":122, "pesq_ref":[1,2,3]
+    },
+    {"_id":5,"titulo":"Computação aplicado a aerodinâmica", "dias_de_producao":98, "pesq_ref":[2,3]
+    },
+    {"_id":6,"titulo":"Como GDI foi capaz de aumentar a média do QI mundial", "dias_de_producao":22, "pesq_ref":[3]
+    }
+])
+# Vamos usar o lookup, uma operação do aggregate
+
+## 20- Liste os artigos por pesquisador.
+db.pesquisadore.aggregate([
+    {$lookup:
+        {
+          from: "artigoe",
+          localField: "artigos_ref",
+          foreignField: "_id",
+          as: "artigos"
+          
+        }}
+    ]).pretty()
+
+## 21 - Liste os pesquisadores por artigo.
+db.artigoe.aggregate([
+    {$lookup:
+        {
+          from: "pesquisadore",
+          localField: "pesq_ref",
+          foreignField: "_id",
+          as: "pesquisadores"
+        }}
+    ]).pretty()
+
+## Cada artigo foi escrito por quantos autores?
+## Vamos repetir a 9 com o lookup?
+
+## 22 : Encontre os pesquisadores que escreveram algum artigo cujo titulo comece com "Compu"
+
+db.pesquisadore.aggregate([
+    {$lookup:{from: "artigoe",localField: "artigos_ref", foreignField: "_id", as: "artigos"}},
+    {$match: {"artigos.titulo": /^Compu/}},
+    {$project: {"_id":0,"nome":1}}
+    ]).pretty()
